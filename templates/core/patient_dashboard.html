@@ -1,0 +1,218 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Patient Dashboard - MedSaaS{% endblock %}
+
+{% block content %}
+<div class="msaas-dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="msaas-sidebar">
+        <div class="d-flex align-items-center gap-2 mb-3 px-2">
+            <span class="msaas-logo-mark">M+</span>
+            <div>
+                <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-muted small">Patient</div>
+            </div>
+        </div>
+        <div class="msaas-divider"></div>
+        <div class="sidebar-heading">Overview</div>
+        <a href="#overview-section" class="nav-link active">My Appointments</a>
+        <a href="#booking-section" class="nav-link">Book Appointment</a>
+        <a href="#prescriptions-section" class="nav-link">Prescription History</a>
+        <div class="sidebar-heading">Account</div>
+        <a href="{% url 'home' %}" class="nav-link">View Site</a>
+        <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="msaas-dashboard-content">
+        <div class="mb-4">
+            <h2 class="msaas-section-title mb-1">Patient Dashboard</h2>
+            <p class="text-muted mb-0">Welcome back, {{ user.get_full_name|default:user.username }}.</p>
+        </div>
+
+        <!-- Upcoming Appointments -->
+        <div id="overview-section" class="mb-5">
+            <h5 class="mb-3">Upcoming Appointments</h5>
+            <div class="row g-3">
+                {% for appt in upcoming_appointments %}
+                    <div class="col-md-6">
+                        <div class="msaas-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">Dr. {{ appt.doctor.get_full_name|default:appt.doctor.username }}</h6>
+                                        <p class="text-muted small mb-0">{{ appt.doctor.doctor_profile.specialization|default:"General" }}</p>
+                                    </div>
+                                    <span class="msaas-badge {{ appt.status_badge_class }}">{{ appt.get_status_display }}</span>
+                                </div>
+                                <p class="mb-1"><strong>Date:</strong> {{ appt.date }}</p>
+                                <p class="mb-1"><strong>Time:</strong> {{ appt.time }}</p>
+                                <p class="text-muted small mb-3">{{ appt.symptoms_description|default:"No symptoms description provided." }}</p>
+                                <a href="{% url 'cancel_own_appointment' appt.id %}" class="btn btn-sm btn-msaas-outline" onclick="return confirm('Cancel this appointment?');">Cancel Appointment</a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="msaas-empty-state">
+                            <div class="empty-icon">+</div>
+                            <h6>No upcoming appointments</h6>
+                            <p>Use the booking form below to schedule a visit with a doctor.</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Booking Wizard -->
+        <div id="booking-section" class="mb-5">
+            <h5 class="mb-3">Book an Appointment</h5>
+            <div class="msaas-form-card">
+                <form method="post" action="{% url 'book_appointment' %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Filter by Specialization</label>
+                            {{ booking_form.specialization }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Select Doctor</label>
+                            {{ booking_form.doctor }}
+                            {% if booking_form.doctor.errors %}
+                                <div class="text-danger small mt-1">{{ booking_form.doctor.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date</label>
+                            {{ booking_form.date }}
+                            {% if booking_form.date.errors %}
+                                <div class="text-danger small mt-1">{{ booking_form.date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Time</label>
+                            {{ booking_form.time }}
+                            {% if booking_form.time.errors %}
+                                <div class="text-danger small mt-1">{{ booking_form.time.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Symptoms / Reason for visit</label>
+                        {{ booking_form.symptoms_description }}
+                        {% if booking_form.symptoms_description.errors %}
+                            <div class="text-danger small mt-1">{{ booking_form.symptoms_description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-msaas-primary">Request Appointment</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Prescription History -->
+        <div id="prescriptions-section" class="mb-5">
+            <h5 class="mb-3">Prescription History</h5>
+            <div class="msaas-table-card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Notes / Prescription</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in prescription_history %}
+                                <tr>
+                                    <td>Dr. {{ record.doctor.get_full_name|default:record.doctor.username }}</td>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.doctor_notes }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="text-center text-muted py-4">No prescription history yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Appointment History -->
+        <div class="mb-5">
+            <h5 class="mb-3">All Appointments</h5>
+            <div class="msaas-table-card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                                <tr>
+                                    <td>Dr. {{ appt.doctor.get_full_name|default:appt.doctor.username }}</td>
+                                    <td>{{ appt.date }}</td>
+                                    <td>{{ appt.time }}</td>
+                                    <td><span class="msaas-badge {{ appt.status_badge_class }}">{{ appt.get_status_display }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-4">No appointments found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter doctors by specialization on the booking form
+    document.addEventListener('DOMContentLoaded', function () {
+        const specializationSelect = document.getElementById('id_specialization');
+        const doctorSelect = document.getElementById('id_doctor');
+
+        if (!specializationSelect || !doctorSelect) return;
+
+        const allOptions = Array.from(doctorSelect.options).map(opt => ({
+            value: opt.value,
+            text: opt.text
+        }));
+
+        specializationSelect.addEventListener('change', function () {
+            const selected = this.value.trim().toLowerCase();
+            doctorSelect.innerHTML = '';
+
+            allOptions.forEach(opt => {
+                if (opt.value === '') {
+                    return;
+                }
+                if (!selected || opt.text.toLowerCase().includes(selected)) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = opt.value;
+                    newOpt.text = opt.text;
+                    doctorSelect.appendChild(newOpt);
+                }
+            });
+
+            if (doctorSelect.options.length === 0) {
+                const newOpt = document.createElement('option');
+                newOpt.value = '';
+                newOpt.text = 'No doctors available for this specialization';
+                doctorSelect.appendChild(newOpt);
+            }
+        });
+    });
+</script>
+{% endblock %}

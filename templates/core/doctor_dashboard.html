@@ -1,0 +1,300 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Doctor Dashboard - MedSaaS{% endblock %}
+
+{% block content %}
+<div class="msaas-dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="msaas-sidebar">
+        <div class="d-flex align-items-center gap-2 mb-3 px-2">
+            <img src="{{ profile.display_picture_url }}" class="msaas-profile-pic" alt="Profile picture">
+            <div>
+                <div class="fw-bold">Dr. {{ user.get_full_name|default:user.username }}</div>
+                <div class="text-muted small">{{ profile.specialization }}</div>
+            </div>
+        </div>
+        <div class="msaas-divider"></div>
+        <div class="sidebar-heading">Overview</div>
+        <a href="#profile-section" class="nav-link active">My Profile</a>
+        <a href="#appointments-section" class="nav-link">Appointment Queue</a>
+        <a href="#insights-section" class="nav-link">Health Insights</a>
+        <div class="sidebar-heading">Account</div>
+        <a href="{% url 'home' %}" class="nav-link">View Site</a>
+        <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="msaas-dashboard-content">
+        <div class="mb-4">
+            <h2 class="msaas-section-title mb-1">Doctor Dashboard</h2>
+            <p class="text-muted mb-0">Welcome back, Dr. {{ user.get_full_name|default:user.username }}.</p>
+        </div>
+
+        <!-- Appointment Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">P</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ appointment_stats.pending }}</div>
+                        <div class="msaas-kpi-label">Pending</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">A</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ appointment_stats.approved }}</div>
+                        <div class="msaas-kpi-label">Approved</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">C</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ appointment_stats.completed }}</div>
+                        <div class="msaas-kpi-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">X</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ appointment_stats.cancelled }}</div>
+                        <div class="msaas-kpi-label">Cancelled</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile-section" class="msaas-card mb-5">
+            <div class="card-body">
+                <h5 class="mb-3">My Profile</h5>
+                <form method="post" action="{% url 'doctor_update_profile' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Specialization</label>
+                            {{ profile_form.specialization }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Experience (years)</label>
+                            {{ profile_form.experience_years }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone</label>
+                            {{ profile_form.phone }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Profile Picture</label>
+                            {{ profile_form.profile_picture }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-msaas-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Appointment Queue -->
+        <div id="appointments-section" class="mb-5">
+            <h5 class="mb-3">Appointment Queue</h5>
+            <div class="msaas-table-card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Symptoms</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                                <tr>
+                                    <td>{{ appt.patient.get_full_name|default:appt.patient.username }}</td>
+                                    <td>{{ appt.date }}</td>
+                                    <td>{{ appt.time }}</td>
+                                    <td>{{ appt.symptoms_description|truncatewords:8|default:"--" }}</td>
+                                    <td><span class="msaas-badge {{ appt.status_badge_class }}">{{ appt.get_status_display }}</span></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-msaas-primary" data-bs-toggle="modal" data-bs-target="#noteModal{{ appt.id }}">
+                                            Manage
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Manage / Medical Notes Modal -->
+                                <div class="modal fade" id="noteModal{{ appt.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'doctor_update_appointment' appt.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Manage Appointment</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p class="text-muted small mb-3">
+                                                        Patient: {{ appt.patient.get_full_name|default:appt.patient.username }}<br>
+                                                        Symptoms: {{ appt.symptoms_description|default:"Not provided" }}
+                                                    </p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Status</label>
+                                                        <select name="status" class="form-select">
+                                                            {% for value, label in appt.STATUS_CHOICES %}
+                                                                <option value="{{ value }}" {% if appt.status == value %}selected{% endif %}>{{ label }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Medical Notes / Prescription</label>
+                                                        <textarea name="doctor_notes" class="form-control" rows="4" placeholder="Add medical notes or prescription details...">{{ appt.doctor_notes|default:"" }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-msaas-outline" data-bs-dismiss="modal">Close</button>
+                                                    <button type="submit" class="btn btn-msaas-primary">Save</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-4">No appointments yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Insights CRUD -->
+        <div id="insights-section" class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h5 class="mb-0">My Health Insights</h5>
+                <button type="button" class="btn btn-msaas-primary" data-bs-toggle="modal" data-bs-target="#createInsightModal">
+                    + New Insight
+                </button>
+            </div>
+
+            <div class="row g-4">
+                {% for insight in insights %}
+                    <div class="col-md-4">
+                        <div class="msaas-insight-card">
+                            <div class="insight-img-wrap">
+                                <img src="{{ insight.display_image_url }}" alt="{{ insight.title }}">
+                            </div>
+                            <div class="card-body">
+                                <span class="msaas-category-pill">{{ insight.category }}</span>
+                                <h6 class="insight-title">{{ insight.title }}</h6>
+                                <p class="insight-excerpt">{{ insight.content|truncatewords:15 }}</p>
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="button" class="btn btn-sm btn-msaas-outline" data-bs-toggle="modal" data-bs-target="#editInsightModal{{ insight.id }}">Edit</button>
+                                    <a href="{% url 'doctor_insight_delete' insight.id %}" class="btn btn-sm btn-msaas-outline" onclick="return confirm('Delete this insight?');">Delete</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Insight Modal -->
+                    <div class="modal fade" id="editInsightModal{{ insight.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="post" action="{% url 'doctor_insight_update' insight.id %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Health Insight</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Title</label>
+                                            <input type="text" name="title" class="form-control" value="{{ insight.title }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Category</label>
+                                            <select name="category" class="form-select">
+                                                {% for value, label in insight.CATEGORY_CHOICES %}
+                                                    <option value="{{ value }}" {% if insight.category == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Content</label>
+                                            <textarea name="content" class="form-control" rows="5" required>{{ insight.content }}</textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Image</label>
+                                            <input type="file" name="image" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-msaas-outline" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-msaas-primary">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <div class="msaas-empty-state">
+                            <div class="empty-icon">+</div>
+                            <h6>No health insights published yet</h6>
+                            <p>Click "New Insight" to publish your first article.</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Create Insight Modal -->
+        <div class="modal fade" id="createInsightModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'doctor_insight_create' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title">New Health Insight</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Title</label>
+                                {{ insight_form.title }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                {{ insight_form.category }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Content</label>
+                                {{ insight_form.content }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Image</label>
+                                {{ insight_form.image }}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-msaas-outline" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-msaas-primary">Publish</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+{% endblock %}

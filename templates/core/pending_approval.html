@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Pending Approval - MedSaaS{% endblock %}
+
+{% block content %}
+<section class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="msaas-form-card text-center">
+                <div class="msaas-empty-state pb-0">
+                    <div class="empty-icon">!</div>
+                    <h3 class="mb-2">Your account is pending approval</h3>
+                    <p class="mb-4">
+                        Thank you for registering as a doctor with MedSaaS. Our admin team
+                        is reviewing your credentials. You will gain full access to your
+                        dashboard, appointment queue, and health insights tools once your
+                        account has been approved.
+                    </p>
+                    <a href="{% url 'home' %}" class="btn btn-msaas-primary">Back to Home</a>
+                    <a href="{% url 'logout' %}" class="btn btn-msaas-outline ms-2">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

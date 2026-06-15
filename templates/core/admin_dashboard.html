@@ -1,0 +1,196 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Admin Dashboard - MedSaaS{% endblock %}
+
+{% block content %}
+<div class="msaas-dashboard-wrapper">
+
+    <!-- Sidebar -->
+    <aside class="msaas-sidebar">
+        <div class="d-flex align-items-center gap-2 mb-3 px-2">
+            <span class="msaas-logo-mark">M+</span>
+            <div>
+                <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                <div class="text-muted small">Administrator</div>
+            </div>
+        </div>
+        <div class="msaas-divider"></div>
+        <div class="sidebar-heading">Overview</div>
+        <a href="#kpi-section" class="nav-link active">Dashboard</a>
+        <a href="#doctors-section" class="nav-link">Manage Doctors</a>
+        <a href="#appointments-section" class="nav-link">Manage Appointments</a>
+        <div class="sidebar-heading">Account</div>
+        <a href="{% url 'home' %}" class="nav-link">View Site</a>
+        <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="msaas-dashboard-content">
+        <div class="mb-4">
+            <h2 class="msaas-section-title mb-1">Admin Dashboard</h2>
+            <p class="text-muted mb-0">Monitor platform activity and manage doctors and appointments.</p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div id="kpi-section" class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">DR</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ kpi.total_doctors }}</div>
+                        <div class="msaas-kpi-label">Total Doctors</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">PT</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ kpi.total_patients }}</div>
+                        <div class="msaas-kpi-label">Total Patients</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">AP</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ kpi.total_appointments }}</div>
+                        <div class="msaas-kpi-label">Total Appointments</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="msaas-kpi-card">
+                    <div class="msaas-kpi-icon">PA</div>
+                    <div>
+                        <div class="msaas-kpi-value">{{ kpi.pending_approvals }}</div>
+                        <div class="msaas-kpi-label">Pending Doctor Approvals</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doctor Management -->
+        <div id="doctors-section" class="mb-5">
+            <h5 class="mb-3">Manage Doctors</h5>
+            <div class="msaas-table-card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Specialization</th>
+                                <th>Experience</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doctor in doctors %}
+                                <tr>
+                                    <td>Dr. {{ doctor.get_full_name|default:doctor.username }}</td>
+                                    <td>{{ doctor.username }}</td>
+                                    <td>{{ doctor.doctor_profile.specialization|default:"--" }}</td>
+                                    <td>{{ doctor.doctor_profile.experience_years|default:"0" }} yrs</td>
+                                    <td>
+                                        {% if doctor.doctor_profile.is_approved %}
+                                            <span class="msaas-badge badge-approved-doc">Approved</span>
+                                        {% else %}
+                                            <span class="msaas-badge badge-pending-doc">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if doctor.doctor_profile.is_approved %}
+                                            <a href="{% url 'admin_reject_doctor' doctor.id %}" class="btn btn-sm btn-msaas-outline">Revoke</a>
+                                        {% else %}
+                                            <a href="{% url 'admin_approve_doctor' doctor.id %}" class="btn btn-sm btn-msaas-primary">Approve</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-4">No doctors registered yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointment Management -->
+        <div id="appointments-section" class="mb-5">
+            <h5 class="mb-3">Manage Appointments</h5>
+            <div class="msaas-table-card">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in appointments %}
+                                <tr>
+                                    <td>{{ appt.patient.get_full_name|default:appt.patient.username }}</td>
+                                    <td>Dr. {{ appt.doctor.get_full_name|default:appt.doctor.username }}</td>
+                                    <td>{{ appt.date }}</td>
+                                    <td>{{ appt.time }}</td>
+                                    <td><span class="msaas-badge {{ appt.status_badge_class }}">{{ appt.get_status_display }}</span></td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            {% if appt.status != 'CANCELLED' and appt.status != 'COMPLETED' %}
+                                                <a href="{% url 'admin_cancel_appointment' appt.id %}" class="btn btn-sm btn-msaas-outline">Cancel</a>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-sm btn-msaas-primary" data-bs-toggle="modal" data-bs-target="#reassignModal{{ appt.id }}">Reassign</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Reassign Modal -->
+                                <div class="modal fade" id="reassignModal{{ appt.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'admin_reassign_appointment' appt.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Reassign Appointment</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <label class="form-label">Select New Doctor</label>
+                                                    <select name="doctor" class="form-select" required>
+                                                        {% for doc in doctors %}
+                                                            {% if doc.doctor_profile.is_approved %}
+                                                                <option value="{{ doc.id }}" {% if doc.id == appt.doctor.id %}selected{% endif %}>
+                                                                    Dr. {{ doc.get_full_name|default:doc.username }} ({{ doc.doctor_profile.specialization }})
+                                                                </option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-msaas-outline" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-msaas-primary">Reassign</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center text-muted py-4">No appointments found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+{% endblock %}

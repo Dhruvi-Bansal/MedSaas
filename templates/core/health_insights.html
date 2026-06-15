@@ -1,0 +1,117 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Health Insights - MedSaaS{% endblock %}
+
+{% block content %}
+
+<section class="container py-5">
+
+    <div class="text-center mb-5">
+        <h1 class="msaas-section-title">Health Insights</h1>
+        <p class="msaas-section-subtitle">Curated articles on nutrition, fitness, mental health, and more.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Filter Sidebar -->
+        <div class="col-lg-3">
+            <div class="msaas-filter-sidebar mb-4">
+                <div class="filter-title">Search</div>
+                <form method="get" action="{% url 'health_insights' %}">
+                    {% if selected_category %}
+                        <input type="hidden" name="category" value="{{ selected_category }}">
+                    {% endif %}
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Search insights..." value="{{ search_query }}">
+                        <button class="btn btn-msaas-primary" type="submit">Go</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="msaas-filter-sidebar">
+                <div class="filter-title">Categories</div>
+                <a href="{% url 'health_insights' %}{% if search_query %}?q={{ search_query }}{% endif %}"
+                   class="msaas-filter-link {% if not selected_category %}active{% endif %}">
+                    All Categories
+                </a>
+                {% for value, label in categories %}
+                    <a href="?category={{ value }}{% if search_query %}&q={{ search_query }}{% endif %}"
+                       class="msaas-filter-link {% if selected_category == value %}active{% endif %}">
+                        {{ label }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Insight Grid -->
+        <div class="col-lg-9">
+            {% if page_obj %}
+                <div class="row g-4">
+                    {% for insight in page_obj %}
+                        <div class="col-md-4">
+                            <div class="msaas-insight-card">
+                                <div class="insight-img-wrap">
+                                    {% if insight.display_image_url %}
+                                        <img src="{{ insight.display_image_url }}" alt="{{ insight.title }}">
+                                    {% else %}
+                                        <img src="{{ insight.image }}" alt="{{ insight.title }}">
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <span class="msaas-category-pill">{{ insight.category }}</span>
+                                    <h6 class="insight-title">{{ insight.title }}</h6>
+                                    <p class="insight-excerpt">{{ insight.content|truncatewords:20 }}</p>
+                                    <div class="insight-meta">
+                                        {% if insight.author_name %}
+                                            {{ insight.author_name }}
+                                        {% else %}
+                                            Dr. {{ insight.doctor.get_full_name|default:insight.doctor.username }}
+                                        {% endif %}
+                                        &middot; {{ insight.created_at|date:"M d, Y" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.paginator.num_pages > 1 %}
+                    <nav class="mt-5">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Previous</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}">Next</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">Next</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="msaas-empty-state">
+                    <div class="empty-icon">!</div>
+                    <h5>No insights found</h5>
+                    <p>Try adjusting your search or category filter.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+
+{% endblock %}

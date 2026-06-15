@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <rect width="400" height="200" fill="#eaf5ff"/>
+  <circle cx="200" cy="100" r="40" fill="#4da6ff"/>
+  <text x="200" y="170" font-family="Arial" font-size="16" fill="#1f2937" text-anchor="middle">MedSaaS</text>
+</svg>
