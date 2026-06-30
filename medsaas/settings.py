@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-medsaas-change-this-key-in-production-987654321'
+SECRET_KEY = ''
 
 DEBUG = True
 
